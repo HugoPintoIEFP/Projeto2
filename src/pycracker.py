@@ -11,14 +11,14 @@
 import os
 from docopt import docopt
 import sys
-
+from textwrap import dedent
 DEFAULT_PWD_FILE = '/etc/shadow'
 
 def main():
     """
         Pycracker entry point. Reads command line arguments and using the docopt library and calls the appropriate functions
     """
-    doc = f"""
+    doc = dedent(f"""
     Pycracker is a password cracker written in Python3. Using a password dictionary, 
     it searches for user with passwords in that dictionary
 
@@ -31,7 +31,7 @@ def main():
         <dictionary>            Password dictionary
         -u USER, --user=USER    Search password for this USER only
         -v, --verbose           Increase verbosity level
-    """
+    """)
 
     args = docopt(doc)
     pwd_file = args['<passwords>'] or DEFAULT_PWD_FILE
