@@ -10,13 +10,16 @@
 """
 import os
 from docopt import docopt
-
+import sys
 
 def main():
     """
         Pycracker entry point. Reads command line arguments and using the docopt library and calls the appropriate functions
     """
+    doc = f"""
+    Pycracker is a password cracker writee
 
+    """
 
 if __name__ == '__main__':
     main()
