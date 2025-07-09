@@ -34,7 +34,7 @@ def main():
     """
 
     args = docopt(doc)
-    print(args)
+    pwd_file = args['<passwords>'] or DEFAULT_PWD_FILE
 
 if __name__ == '__main__':
     main()
