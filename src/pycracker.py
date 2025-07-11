@@ -33,6 +33,7 @@ PYCRACKER_CTX = CryptContext(schemes = [
 AccountStatus = Enum('AccountStatus', ' VALID BLOCKED LOCKED INVALID ')
 
 HASH_ID_NAMES = {
+    '0' : 'No Hash',
     '1' : 'MD5',
     '2' : 'Blowfish',
     '3' : 'Blowfish (2a)',
@@ -52,10 +53,24 @@ def show_matches(
     """
     # print(f"{pwd_filename=} {dict_filename=} {user=} {verbose=}")
     matches = find_matches(pwd_filename, dict_filename, user, verbose)
-    if len(matches) == 0:
-        print("Não foram encontradas quaisquer palavras-passe")
+    if verbose is False:
+        if len(matches) == 0:
+            print("[-] Não foram encontradas quaisquer palavras-passe")
+        else:
+            print("Foram encontradas as seguintes palavras-passe:")
+            for user, (clear_text_pwd, method_name) in matches.items():
+                print(f"[+] {user:<10}: {repr(clear_text_pwd):<20} ({method_name})")
     else:
-        print(f"Foram encontradas as seguintes palavras-passe: {matches}")
+        for user, (clear_text_pwd, method_name) in matches.items():
+            print(f"[+] A tentar utilizador '{user}'")
+            if clear_text_pwd == 'B':
+                print("[-] ... ignorado. Conta bloqueada/inativa.(começa por *).")
+            elif clear_text_pwd == 'L':
+                print("[-] ... ignorado. Conta bloqueada.(começa por '!').")
+            elif clear_text_pwd == 'I':
+                print("[-] ... ignorado. Conta sem palavra-passe.")
+            else:
+                print(f"[=] ... PALAVRA-PASSE DESCOBERTA ===> '{clear_text_pwd}'")
 
 def find_matches(
         pwd_filename: str, 
@@ -68,6 +83,7 @@ def find_matches(
     and the hashing algorithm that was used to encrypt the password.
     """
     matches = {}
+
     with open(dict_filename, 'r') as dict_file:
         with open(pwd_filename, 'rt') as pwd_file:
             for line in pwd_file:
@@ -75,15 +91,25 @@ def find_matches(
                 account_status = get_account_status(pwd_field)
                 if account_status is AccountStatus.VALID:
                     if clear_txt_pwd := find_pwd(pwd_field,dict_file):
-                        matches[curr_user] = clear_txt_pwd
+                        matches[curr_user] = (clear_txt_pwd, method_name(pwd_field))
+                if verbose is True:
+                    if account_status is AccountStatus.BLOCKED:
+                        matches[curr_user] = ('B', "")
+                    elif account_status is AccountStatus.LOCKED:
+                        matches[curr_user] = ('L', "")
+                    if account_status is AccountStatus.INVALID:
+                        matches[curr_user] = ('I', "")
+                    elif account_status is AccountStatus.VALID:
+                        if clear_txt_pwd := find_pwd(pwd_field,dict_file):
+                            matches[curr_user] = (clear_txt_pwd, method_name(pwd_field))
                 dict_file.seek(0)
-                    
+
                 
     return matches
 
 def get_account_status(pwd_field: str) -> AccountStatus:
     return (
-        AccountStatus.BLOCKED if pwd_field in ('*', '!') else
+        AccountStatus.BLOCKED if pwd_field in ('*') else
         AccountStatus.LOCKED if len(pwd_field) > 0 and pwd_field[0] == '!' else
         AccountStatus.INVALID if len(pwd_field) == 0 else
         AccountStatus.VALID
@@ -112,7 +138,7 @@ def verify_password(clear_text_pwd: str, pwd_field: str) -> bool:
 
 
 def method_name(pwd_field:str) -> str:
-    method_id = parse_pwd_field(pwd_field)[1]
+    method_id = parse_pwd_field(pwd_field)[0]
     return HASH_ID_NAMES[method_id]
 
 
