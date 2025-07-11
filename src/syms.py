@@ -5,7 +5,7 @@ Através da linha de comandos, o seu programa recebe um caminho para uma directo
 uma listagem com todos os ficheiros duplicados dentro dessa directoria,
 inclusive dentro das sub-directorias.
 
-Rafael Oliveira e Hugo Pinto, 2025
+Rafael Oliveira e Hugo Pinto, 11/07/2025
 """
 
 import re

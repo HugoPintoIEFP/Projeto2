@@ -6,7 +6,7 @@
     1. Utilizando o móduloi argparse (presente na biblioteca padrão)
     2.Utilizando o módulo  docopt (disponível no PyPI)
 
-    Rafael Oliveira e Hugo Pinto, 2025
+    Rafael Oliveira e Hugo Pinto, 11/07/2025
 """
 #import os
 #import string
