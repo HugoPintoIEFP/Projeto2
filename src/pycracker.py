@@ -64,9 +64,9 @@ def show_matches(
         for user, (clear_text_pwd, method_name) in matches.items():
             print(f"[+] A tentar utilizador '{user}'")
             if clear_text_pwd == 'B':
-                print("[-] ... ignorado. Conta bloqueada/inativa.(começa por *).")
+                print("[-] ... ignorado. Conta bloqueada/inativa.(começa por *)")
             elif clear_text_pwd == 'L':
-                print("[-] ... ignorado. Conta bloqueada.(começa por '!').")
+                print("[-] ... ignorado. Conta bloqueada.(começa por !)")
             elif clear_text_pwd == 'I':
                 print("[-] ... ignorado. Conta sem palavra-passe.")
             else:
@@ -83,26 +83,50 @@ def find_matches(
     and the hashing algorithm that was used to encrypt the password.
     """
     matches = {}
-
-    with open(dict_filename, 'r') as dict_file:
-        with open(pwd_filename, 'rt') as pwd_file:
-            for line in pwd_file:
-                curr_user, pwd_field = line.split(':')[:2]
-                account_status = get_account_status(pwd_field)
-                if account_status is AccountStatus.VALID:
-                    if clear_txt_pwd := find_pwd(pwd_field,dict_file):
-                        matches[curr_user] = (clear_txt_pwd, method_name(pwd_field))
-                if verbose is True:
-                    if account_status is AccountStatus.BLOCKED:
-                        matches[curr_user] = ('B', "")
-                    elif account_status is AccountStatus.LOCKED:
-                        matches[curr_user] = ('L', "")
-                    if account_status is AccountStatus.INVALID:
-                        matches[curr_user] = ('I', "")
-                    elif account_status is AccountStatus.VALID:
+    if user != None:
+        with open(dict_filename, 'r') as dict_file:
+            with open(pwd_filename, 'rt') as pwd_file:
+                for line in pwd_file:
+                    curr_user, pwd_field = line.split(':')[:2]
+                    if curr_user == user:
+                        account_status = get_account_status(pwd_field)
+                        if account_status is AccountStatus.VALID:
+                            if clear_txt_pwd := find_pwd(pwd_field,dict_file):
+                                matches[curr_user] = (clear_txt_pwd, method_name(pwd_field))
+                                break
+                        if verbose is True:
+                            if account_status is AccountStatus.BLOCKED:
+                                matches[curr_user] = ('B', "")
+                            elif account_status is AccountStatus.LOCKED:
+                                matches[curr_user] = ('L', "")
+                            if account_status is AccountStatus.INVALID:
+                                matches[curr_user] = ('I', "")
+                            elif account_status is AccountStatus.VALID:
+                                if clear_txt_pwd := find_pwd(pwd_field,dict_file):
+                                    matches[curr_user] = (clear_txt_pwd, method_name(pwd_field))        
+                    else:
+                        continue
+                    dict_file.seek(0)
+    else:                
+        with open(dict_filename, 'r') as dict_file:
+            with open(pwd_filename, 'rt') as pwd_file:
+                for line in pwd_file:
+                    curr_user, pwd_field = line.split(':')[:2]
+                    account_status = get_account_status(pwd_field)
+                    if account_status is AccountStatus.VALID:
                         if clear_txt_pwd := find_pwd(pwd_field,dict_file):
                             matches[curr_user] = (clear_txt_pwd, method_name(pwd_field))
-                dict_file.seek(0)
+                    if verbose is True:
+                        if account_status is AccountStatus.BLOCKED:
+                            matches[curr_user] = ('B', "")
+                        elif account_status is AccountStatus.LOCKED:
+                            matches[curr_user] = ('L', "")
+                        if account_status is AccountStatus.INVALID:
+                            matches[curr_user] = ('I', "")
+                        elif account_status is AccountStatus.VALID:
+                            if clear_txt_pwd := find_pwd(pwd_field,dict_file):
+                                matches[curr_user] = (clear_txt_pwd, method_name(pwd_field))
+                    dict_file.seek(0)
 
                 
     return matches
