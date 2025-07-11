@@ -8,11 +8,38 @@
 
     More to come. Continue video from start of Parte 3_A
 """
-import os
-from docopt import docopt
+#import os
+#import string
 import sys
+from enum import Enum
+from typing import TextIO
+from docopt import docopt
 from textwrap import dedent
+from passlib.hash import sha512_crypt #sha256_crypt, md5_crypt, sha1_crypt, bcrypt
+from passlib.context import CryptContext
+
+
 DEFAULT_PWD_FILE = '/etc/shadow'
+
+PYCRACKER_CTX = CryptContext(schemes = [
+    'sha256_crypt',
+    'sha512_crypt',
+    'md5_crypt',
+    'sha1_crypt',
+    'bcrypt'
+])
+
+
+AccountStatus = Enum('AccountStatus', ' VALID BLOCKED LOCKED INVALID ')
+
+HASH_ID_NAMES = {
+    '1' : 'MD5',
+    '2' : 'Blowfish',
+    '3' : 'Blowfish (2a)',
+    '4' : 'Blowfish (2b)',
+    '5' : 'SHA-256',
+    '6' : 'SHA-512',
+}
 
 def show_matches(
         pwd_filename: str, 
@@ -24,7 +51,11 @@ def show_matches(
     Shows all decrypted passwords and users.
     """
     # print(f"{pwd_filename=} {dict_filename=} {user=} {verbose=}")
-    find_matches(pwd_filename, dict_filename, user, verbose)
+    matches = find_matches(pwd_filename, dict_filename, user, verbose)
+    if len(matches) == 0:
+        print("Não foram encontradas quaisquer palavras-passe")
+    else:
+        print(f"Foram encontradas as seguintes palavras-passe: {matches}")
 
 def find_matches(
         pwd_filename: str, 
@@ -41,8 +72,77 @@ def find_matches(
         with open(pwd_filename, 'rt') as pwd_file:
             for line in pwd_file:
                 curr_user, pwd_field = line.split(':')[:2]
-                print(curr_user, pwd_field[:7], pwd_field[-7:])
+                account_status = get_account_status(pwd_field)
+                if account_status is AccountStatus.VALID:
+                    if clear_txt_pwd := find_pwd(pwd_field,dict_file):
+                        matches[curr_user] = clear_txt_pwd
+                dict_file.seek(0)
+                    
+                
     return matches
+
+def get_account_status(pwd_field: str) -> AccountStatus:
+    return (
+        AccountStatus.BLOCKED if pwd_field in ('*', '!') else
+        AccountStatus.LOCKED if len(pwd_field) > 0 and pwd_field[0] == '!' else
+        AccountStatus.INVALID if len(pwd_field) == 0 else
+        AccountStatus.VALID
+    )
+
+
+def find_pwd(pwd_field: str, dict_file: TextIO) -> str | None:
+    """
+    Searches for a clear-text password in 'dict_file'
+    that hashes to the same value as the hash in 'pwd_field'. Returns
+    the clear-text password, if one is found, otherwise returns 'None'.
+    
+    'pwd_field' is the password field for a given user in a /etc/shadow-like file.
+    Example:
+        $6$m7.33qCr$joi9qE/ZYc ... etc ... Fk9BAnGWOi7NqU4/LWYUiP9kxZIoJ90KJRm.
+    """
+    for clear_text_pwd in dict_file:
+        clear_text_pwd = clear_text_pwd.strip()
+        if verify_password(clear_text_pwd,pwd_field):
+            return clear_text_pwd
+    return None
+
+
+def verify_password(clear_text_pwd: str, pwd_field: str) -> bool:
+    return PYCRACKER_CTX.verify(clear_text_pwd, pwd_field)
+
+
+def method_name(pwd_field:str) -> str:
+    method_id = parse_pwd_field(pwd_field)[1]
+    return HASH_ID_NAMES[method_id]
+
+
+def parse_pwd_field(pwd_field: str) -> tuple:
+    """
+    Analisa a informação sobre uma palavra-passe e devolve três campos:
+    método, sal e palavra-passe encriptada.
+    'pwd_field' must be at least something like '$METODO$SAL$HASH' or
+    '$METODO$rounds=ROUNDS$SALT$HASH'
+    """
+
+    fields = pwd_field.split('$')
+    valid_pwd = len(fields) in (4,5) and all(len(field) > 0 for field in fields[1])
+    if not valid_pwd:
+        raise ValueError('Invalid password field')
+
+    if len(fields) == 5:
+        del fields[2]
+    return tuple(fields[1:])
+
+#def encrypt_pwd_for_shadow(clear_text_pwd: str, salt_size = 8) -> str:
+#    """
+    #Generates a complete and suitable password field for '/etc/shadow'.
+    #Hashing method is SHA-512. Returns a string.
+#    """
+
+#    SHA512_ROUNDS = 5000
+#    salt_chars = string.ascii_letters + string.digits
+#    salt = ''.join(random.choice(salt_chars) for _ in range(salt_size))
+#    return sha512_crypt.using(salt = salt, rounds = SHA512_ROUNDS).hash(clear_text_pwd)
 
 def main1():
     """
