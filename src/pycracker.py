@@ -61,16 +61,20 @@ def show_matches(
             for user, (clear_text_pwd, method_name) in matches.items():
                 print(f"[+] {user:<10}: {repr(clear_text_pwd):<20} ({method_name})")
     else:
-        for user, (clear_text_pwd, method_name) in matches.items():
-            print(f"[+] A tentar utilizador '{user}'")
-            if clear_text_pwd == 'B':
-                print("[-] ... ignorado. Conta bloqueada/inativa.(começa por *)")
-            elif clear_text_pwd == 'L':
-                print("[-] ... ignorado. Conta bloqueada.(começa por !)")
-            elif clear_text_pwd == 'I':
-                print("[-] ... ignorado. Conta sem palavra-passe.")
-            else:
-                print(f"[=] ... PALAVRA-PASSE DESCOBERTA ===> '{clear_text_pwd}'")
+        if len(matches) == 0:
+                print("[-] Não foram encontradas quaisquer palavras-passe")
+        else:
+            for user, (clear_text_pwd, method_name) in matches.items():
+                print(f"[+] A tentar utilizador '{user}'")
+                if clear_text_pwd == 'B':
+                    print("[-] ... ignorado. Conta bloqueada/inativa.(começa por *)")
+                elif clear_text_pwd == 'L':
+                    print("[-] ... ignorado. Conta bloqueada.(começa por !)")
+                elif clear_text_pwd == 'I':
+                    print("[-] ... ignorado. Conta sem palavra-passe.")
+                else:
+                    print(f"[=] ... PALAVRA-PASSE DESCOBERTA ===> '{clear_text_pwd}'")
+            
 
 def find_matches(
         pwd_filename: str, 
