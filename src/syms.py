@@ -9,15 +9,17 @@ Rafael Oliveira e Hugo Pinto, 2025
 """
 
 import re
+import sys
 from docopt import docopt
 import os
+import hashlib
 # -----------------------------------------------------------------------------------------
 def main():
-    doc = '''
+    doc = f'''
 Returns all duplciate files in the given folder.
 
 Usage:
-    syms.py [-c] [-n] [-e] [-r PATTERN] [DIR_PATH]
+    {sys.argv[0]} [-c] [-n] [-e] [-r PATTERN] [DIR_PATH]
 
 Options:
     DIR_PATH                        Start directory [defalt: .]
@@ -56,13 +58,13 @@ Options:
         regex = args['--regex']
         show_groups({regex:group_files_by_regex(dir_path, regex)})
         print("-----------------------------------------------------")
+        print()
 
 
 
 
 
-
-
+# Funções.
 # -----------------------------------------------------------------------------------------
 def show_groups(duplicates: dict):
     for filename, paths in duplicates.items():
@@ -99,20 +101,16 @@ def group_files_by_regex(dir_path, regex: str) -> list[str]:
                 found_filenames.append(os.path.join(curr_dir, filename))
     return found_filenames
 # -----------------------------------------------------------------------------------------
-def group_files_by_contents(dir_path) -> dict[str, list[str]]:
+def group_files_by_contents(dir_path: str) -> dict[str, list[str]]:
     groups={}
     for curr_dir, _, filenames in os.walk(dir_path):
         for filename in filenames:
-            if filename not in groups:
-                groups[filename] = []
-            groups[filename].append(os.path.join(curr_dir, filename))
+            filepath = os.path.join(curr_dir, filename)
+            hash = hashlib.file_digest(open(filepath, 'rb'), 'md5').hexdigest()
+            if hash not in groups:
+                groups[hash] = []
+            groups[hash].append(os.path.join(curr_dir, filename))
     return groups
-# -----------------------------------------------------------------------------------------
-# res = {
-#         'Lab.pdf' : ['./Lab.pdf', './dir2/Lab.pdf'],
-#         'FahrCelsius2.cs': ['./FahrCelsius2.cs', './dir1/FahrCelsius2'],
-#         'Restaurante1.cpp': ['./Restaurante1.cpp', './dir1/subdir1/Restaunrante1.cpp']
-#     }
 # -----------------------------------------------------------------------------------------
 if __name__ == '__main__':
     main()
